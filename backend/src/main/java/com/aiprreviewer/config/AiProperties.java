@@ -19,7 +19,7 @@ public class AiProperties {
     private String apiKey;
 
     /** 模型名称 */
-    private String model = "deepseek-v4-pro";
+    private String model = "deepseek-v4-flash";
 
     /** 最大输出 Token 数 */
     private int maxTokens = 4096;
