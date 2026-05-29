@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aiprreviewer.mapper.ReviewTaskMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.aiprreviewer.model.entity.ReviewTask">
+        <id     column="id"             property="id" />
+        <result column="repo_url"       property="repoUrl" />
+        <result column="pr_number"      property="prNumber" />
+        <result column="pr_title"       property="prTitle" />
+        <result column="status"         property="status" />
+        <result column="summary"        property="summary" />
+        <result column="ai_model"       property="aiModel" />
+        <result column="diff_size"      property="diffSize" />
+        <result column="file_count"     property="fileCount" />
+        <result column="error_message"  property="errorMessage" />
+        <result column="created_at"     property="createdAt" />
+        <result column="updated_at"     property="updatedAt" />
+    </resultMap>
+
+    <!-- 分页查询任务列表（按创建时间倒序） -->
+    <select id="selectTaskPage" resultMap="BaseResultMap">
+        SELECT id, repo_url, pr_number, pr_title, status, summary,
+               ai_model, diff_size, file_count, error_message, created_at, updated_at
+        FROM review_tasks
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper>
