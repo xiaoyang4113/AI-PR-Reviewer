@@ -225,6 +225,7 @@ public class ReviewServiceImpl implements ReviewService {
         dto.setDiffSize(task.getDiffSize());
         dto.setFileCount(task.getFileCount());
         dto.setErrorMessage(task.getErrorMessage());
+        dto.setMockMode(task.getSummary() != null && task.getSummary().startsWith("[演示数据]"));
         dto.setCreatedAt(task.getCreatedAt());
         dto.setUpdatedAt(task.getUpdatedAt());
         dto.setComments(comments != null

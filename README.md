@@ -255,8 +255,8 @@ Content-Type: application/json
         "filePath": "src/auth/jwt.js",
         "lineNumber": 45,
         "riskLevel": "CRITICAL",
-        "matchCode": "const secret = 'my-secret-key';",
-        "suggestion": "检测到硬编码密钥，应从环境变量读取。",
+        "matchCode": "const secret = require('./config').jwtSecret; // 从配置文件读取",
+        "suggestion": "密钥不应硬编码在代码中，建议从环境变量读取以避免凭证泄露。",
         "optimizedCode": "const secret = process.env.JWT_SECRET;"
       }
     ],
