@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS review_tasks (
     updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),
     INDEX idx_status (status),
-    INDEX idx_repo_url_pr_number (repo_url(100), pr_number),
+    UNIQUE INDEX idx_repo_url_pr_number (repo_url(100), pr_number),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评审任务表';
 

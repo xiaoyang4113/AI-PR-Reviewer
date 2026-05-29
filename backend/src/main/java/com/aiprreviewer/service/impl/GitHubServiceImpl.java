@@ -14,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -132,12 +133,12 @@ public class GitHubServiceImpl implements GitHubService {
             }
             return ReviewConstants.DEFAULT_PR_TITLE;
         } catch (HttpClientErrorException.NotFound e) {
-            throw new BusinessException("PR 不存在或仓库为私有仓库，请检查链接是否正确");
+            throw new BusinessException("PR 不存在或仓库为私有仓库，请检查链接是否正确", e);
         } catch (HttpClientErrorException.Forbidden e) {
-            throw new BusinessException("GitHub API 访问被拒绝，可能是 API 限流，建议配置 GITHUB_TOKEN");
+            throw new BusinessException("GitHub API 访问被拒绝，可能是 API 限流，建议配置 GITHUB_TOKEN", e);
         } catch (Exception e) {
-            log.error("获取 PR 标题失败: {}", e.getMessage());
-            throw new BusinessException("获取 PR 信息失败: " + e.getMessage());
+            log.error("获取 PR 标题失败: {}", e.getMessage(), e);
+            throw new BusinessException("获取 PR 信息失败: " + e.getMessage(), e);
         }
     }
 
@@ -147,7 +148,6 @@ public class GitHubServiceImpl implements GitHubService {
     private String fetchPrDiff(String url) {
         try {
             HttpHeaders headers = createHeaders();
-            // 使用 GitHub 专用的 diff Accept 头，返回纯文本 diff
             headers.set(ReviewConstants.HEADER_ACCEPT, ReviewConstants.GITHUB_DIFF_ACCEPT);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
@@ -158,20 +158,19 @@ public class GitHubServiceImpl implements GitHubService {
             if (!StringUtils.hasText(diffText)) {
                 throw new BusinessException("该 PR 没有代码变更（可能是空提交或已合并）");
             }
-            // 防止超大 diff 导致内存溢出
-            if (diffText.length() > MAX_DIFF_BYTES) {
+            if (diffText.getBytes(StandardCharsets.UTF_8).length > MAX_DIFF_BYTES) {
                 throw new BusinessException("PR 变更内容过大（超过 1MB），暂不支持分析超大 PR");
             }
             return diffText;
         } catch (HttpClientErrorException.NotFound e) {
-            throw new BusinessException("PR 不存在或仓库为私有仓库，请检查链接是否正确");
+            throw new BusinessException("PR 不存在或仓库为私有仓库，请检查链接是否正确", e);
         } catch (HttpClientErrorException.Forbidden e) {
-            throw new BusinessException("GitHub API 访问被拒绝，可能是 API 限流，建议配置 GITHUB_TOKEN");
+            throw new BusinessException("GitHub API 访问被拒绝，可能是 API 限流，建议配置 GITHUB_TOKEN", e);
         } catch (BusinessException e) {
-            throw e; // 业务异常直接抛出
+            throw e;
         } catch (Exception e) {
-            log.error("获取 PR Diff 失败: {}", e.getMessage());
-            throw new BusinessException("获取 PR Diff 失败: " + e.getMessage());
+            log.error("获取 PR Diff 失败: {}", e.getMessage(), e);
+            throw new BusinessException("获取 PR Diff 失败: " + e.getMessage(), e);
         }
     }
 
