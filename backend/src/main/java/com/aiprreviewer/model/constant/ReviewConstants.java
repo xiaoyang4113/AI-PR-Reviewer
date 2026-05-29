@@ -18,6 +18,12 @@ public final class ReviewConstants {
     // ==================== 字段长度限制 ====================
     /** 文件路径最大长度（DB 为 VARCHAR(500)） */
     public static final int MAX_FILE_PATH_LENGTH = 500;
+    /** 问题代码片段最大长度 */
+    public static final int MAX_MATCH_CODE_LENGTH = 2000;
+    /** 修改建议最大长度 */
+    public static final int MAX_SUGGESTION_LENGTH = 5000;
+    /** 优化代码最大长度 */
+    public static final int MAX_OPTIMIZED_CODE_LENGTH = 5000;
     /** 任务超时时间（分钟），超过此时间的 PROCESSING 任务视为失败 */
     public static final int TASK_TIMEOUT_MINUTES = 5;
 
