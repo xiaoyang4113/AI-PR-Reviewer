@@ -15,13 +15,14 @@ import java.util.List;
 public interface ReviewTaskMapper extends BaseMapper<ReviewTask> {
 
     /**
-     * 查询同一 PR 是否有未完成的任务，用于去重
+     * 查询同一 PR 是否有未完成的任务（只查最近 N 分钟内的，超时任务视为失败）
      */
-    @Select("SELECT COUNT(1) FROM review_tasks WHERE repo_url = #{repoUrl} AND pr_number = #{prNumber} AND status IN (#{pending}, #{processing})")
+    @Select("SELECT COUNT(1) FROM review_tasks WHERE repo_url = #{repoUrl} AND pr_number = #{prNumber} AND status IN (#{pending}, #{processing}) AND created_at > DATE_SUB(NOW(), INTERVAL #{timeoutMinutes} MINUTE)")
     int countPendingByRepoAndPr(@Param("repoUrl") String repoUrl,
                                  @Param("prNumber") Integer prNumber,
                                  @Param("pending") String pendingStatus,
-                                 @Param("processing") String processingStatus);
+                                 @Param("processing") String processingStatus,
+                                 @Param("timeoutMinutes") int timeoutMinutes);
 
     /**
      * 分页查询任务列表，按创建时间倒序

@@ -15,17 +15,11 @@ public final class ReviewConstants {
     /** 最大每页大小（防止恶意请求） */
     public static final int MAX_PAGE_SIZE = 100;
 
-    // ==================== 字段长度限制（防止超长数据写入） ====================
-    /** 文件路径最大长度 */
+    // ==================== 字段长度限制 ====================
+    /** 文件路径最大长度（DB 为 VARCHAR(500)） */
     public static final int MAX_FILE_PATH_LENGTH = 500;
-    /** 问题代码片段最大长度 */
-    public static final int MAX_MATCH_CODE_LENGTH = 2000;
-    /** 修改建议最大长度 */
-    public static final int MAX_SUGGESTION_LENGTH = 5000;
-    /** 优化代码最大长度 */
-    public static final int MAX_OPTIMIZED_CODE_LENGTH = 5000;
-    /** 错误信息最大长度 */
-    public static final int MAX_ERROR_MSG_LENGTH = 1000;
+    /** 任务超时时间（分钟），超过此时间的 PROCESSING 任务视为失败 */
+    public static final int TASK_TIMEOUT_MINUTES = 5;
 
     // ==================== HTTP 请求头 ====================
     public static final String HEADER_AUTHORIZATION = "Authorization";
