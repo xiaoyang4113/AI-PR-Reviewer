@@ -47,8 +47,16 @@ public class GitHubServiceImpl implements GitHubService {
     private static final Pattern DIFF_FILE_PATTERN =
             Pattern.compile("^" + ReviewConstants.DIFF_FILE_PREFIX, Pattern.MULTILINE);
 
+    /** 单次允许获取的最大 diff 大小（1MB，防止 OOM） */
+    private static final long MAX_DIFF_BYTES = 1_048_576L;
+
     @Override
     public GitHubDiffResult fetchPullRequestDiff(String repoUrl, Integer prNumber) {
+        // 参数校验
+        if (prNumber == null || prNumber <= 0) {
+            throw new BusinessException("PR 编号必须为正整数");
+        }
+
         // 步骤1：解析并校验 URL
         String[] ownerAndRepo = parseAndValidateRepoUrl(repoUrl);
         String owner = ownerAndRepo[0];
@@ -72,7 +80,7 @@ public class GitHubServiceImpl implements GitHubService {
     }
 
     /**
-     * 解析并校验 GitHub 仓库 URL，防止 SSRF 攻击
+     * 解析并校验 GitHub 仓库 URL 格式，确保只允许 github.com 域名
      */
     private String[] parseAndValidateRepoUrl(String repoUrl) {
         if (!StringUtils.hasText(repoUrl)) {
@@ -149,6 +157,10 @@ public class GitHubServiceImpl implements GitHubService {
             String diffText = response.getBody();
             if (!StringUtils.hasText(diffText)) {
                 throw new BusinessException("该 PR 没有代码变更（可能是空提交或已合并）");
+            }
+            // 防止超大 diff 导致内存溢出
+            if (diffText.length() > MAX_DIFF_BYTES) {
+                throw new BusinessException("PR 变更内容过大（超过 1MB），暂不支持分析超大 PR");
             }
             return diffText;
         } catch (HttpClientErrorException.NotFound e) {
