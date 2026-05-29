@@ -6,6 +6,7 @@ import com.aiprreviewer.model.dto.ReviewCreateRequest;
 import com.aiprreviewer.model.dto.ReviewResultDTO;
 import com.aiprreviewer.service.ReviewService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,7 @@ public class ReviewController {
     @GetMapping("/list")
     public ApiResponse<List<ReviewResultDTO>> listReviews(
             @RequestParam(defaultValue = "" + ReviewConstants.DEFAULT_PAGE) @Min(1) int page,
-            @RequestParam(defaultValue = "" + ReviewConstants.DEFAULT_PAGE_SIZE) @Min(1) int size) {
+            @RequestParam(defaultValue = "" + ReviewConstants.DEFAULT_PAGE_SIZE) @Min(1) @Max(100) int size) {
         log.info("查询评审列表: page={} size={}", page, size);
         List<ReviewResultDTO> results = reviewService.listReviews(page, size);
         return ApiResponse.success(results);
