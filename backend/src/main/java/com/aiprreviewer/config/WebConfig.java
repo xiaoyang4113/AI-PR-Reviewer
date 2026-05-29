@@ -17,7 +17,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*")
                 .allowedMethods(ReviewConstants.ALLOWED_METHODS)
                 .allowedHeaders("*")
-                .allowCredentials(true)
                 .maxAge(ReviewConstants.CORS_MAX_AGE);
     }
 }
