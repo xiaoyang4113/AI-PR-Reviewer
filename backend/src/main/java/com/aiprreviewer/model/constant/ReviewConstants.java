@@ -25,7 +25,6 @@ public final class ReviewConstants {
     public static final String HEADER_AUTHORIZATION = "Authorization";
     public static final String HEADER_ACCEPT = "Accept";
     public static final String HEADER_USER_AGENT = "User-Agent";
-    public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String BEARER_PREFIX = "Bearer ";
     public static final String USER_AGENT_VALUE = "AI-PR-Reviewer/1.0";
 
