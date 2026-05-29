@@ -155,10 +155,10 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
             throw new RuntimeException("AI API 返回数据为空或格式异常");
         }
 
-        // 提取 message.content
-        return body.get(ReviewConstants.AI_CHOICES_FIELD).get(0)
-                .get(ReviewConstants.AI_MESSAGE_FIELD)
-                .get(ReviewConstants.AI_CONTENT_FIELD).asText();
+        // 提取 message.content（path() 不会返回 null，避免 NPE）
+        return body.path(ReviewConstants.AI_CHOICES_FIELD).path(0)
+                .path(ReviewConstants.AI_MESSAGE_FIELD)
+                .path(ReviewConstants.AI_CONTENT_FIELD).asText();
     }
 
     /**

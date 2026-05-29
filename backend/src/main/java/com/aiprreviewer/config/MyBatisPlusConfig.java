@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * MyBatis-Plus 配置（分页插件）
@@ -18,5 +20,11 @@ public class MyBatisPlusConfig {
         // 分页拦截器（MySQL 方言）
         interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
         return interceptor;
+    }
+
+    /** 事务模板，用于需要原子性的局部操作 */
+    @Bean
+    public TransactionTemplate transactionTemplate(PlatformTransactionManager tm) {
+        return new TransactionTemplate(tm);
     }
 }
