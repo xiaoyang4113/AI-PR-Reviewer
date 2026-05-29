@@ -49,4 +49,7 @@ public class ReviewResultDTO {
 
     /** 评审意见列表 */
     private List<CommentDTO> comments;
+
+    /** 是否为 Mock 降级数据（AI API 不可用时的演示数据） */
+    private boolean mockMode;
 }
