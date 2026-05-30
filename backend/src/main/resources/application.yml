@@ -7,15 +7,18 @@ server:
     accept-count: 100
     max-connections: 10000
 
+
 spring:
   application:
     name: ai-pr-reviewer
+  profiles:
+    active: dev
 
-  # MySQL 数据源
+  # MySQL 数据源（密码等敏感信息在 application-dev.yml）
   datasource:
     url: jdbc:mysql://localhost:3306/ai_pr_reviewer?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: 你的数据库密码
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -33,23 +36,23 @@ mybatis-plus:
   type-aliases-package: com.aiprreviewer.model.entity
   configuration:
     map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     cache-enabled: true
     lazy-loading-enabled: true
     default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
 
-# 应用自定义配置
+# 应用自定义配置（密钥等敏感信息在 application-dev.yml）
 app:
   github:
     api-base: https://api.github.com
-    token:
+    token: ${GITHUB_TOKEN:}
 
   ai:
     api-base: https://api.deepseek.com/v1
-    api-key: 你的DeepSeek_API_Key
+    api-key: ${AI_API_KEY:}
     model: deepseek-v4-flash
     max-tokens: 4096
     temperature: 0.2

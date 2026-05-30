@@ -30,7 +30,14 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    /** 创建评审任务 */
+    /**
+     * 创建评审任务
+     * 接收前端提交的仓库地址和 PR 编号，同步执行代码评审流程
+     * 评审包含：获取 diff -> AI 分析 -> 持久化结果 三个步骤
+     *
+     * @param request 创建评审请求，包含 repoUrl 和 prNumber（均经过 Valid 校验）
+     * @return 统一响应体，data 为完整的评审结果（含总结和评论列表）
+     */
     @PostMapping("/create")
     public ApiResponse<ReviewResultDTO> createReview(@Valid @RequestBody ReviewCreateRequest request) {
         log.info("收到评审请求: repo={} pr={}", request.getRepoUrl(), request.getPrNumber());
@@ -38,7 +45,13 @@ public class ReviewController {
         return ApiResponse.success(result);
     }
 
-    /** 查询评审详情 */
+    /**
+     * 查询评审详情
+     * 根据任务 ID 查询评审任务的完整信息，包括总结、评论列表等
+     *
+     * @param id 评审任务 ID，必须大于等于 1
+     * @return 统一响应体，data 为评审详情（含所有评论）
+     */
     @GetMapping("/{id}")
     public ApiResponse<ReviewResultDTO> getReview(@PathVariable @Min(1) Long id) {
         log.info("查询评审详情: id={}", id);

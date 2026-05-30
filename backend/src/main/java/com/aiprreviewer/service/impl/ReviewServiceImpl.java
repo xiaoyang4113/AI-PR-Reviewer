@@ -11,7 +11,7 @@ import com.aiprreviewer.exception.BusinessException;
 import com.aiprreviewer.mapper.ReviewCommentMapper;
 import com.aiprreviewer.mapper.ReviewTaskMapper;
 import com.aiprreviewer.service.AiAnalysisService;
-import com.aiprreviewer.service.GitHubService;
+import com.aiprreviewer.service.CodePlatformService;
 import com.aiprreviewer.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,10 +52,15 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
 
-    private final GitHubService gitHubService;
+    /** 代码平台服务列表（策略模式），当前仅支持 GitHub */
+    private final List<CodePlatformService> platformServices;
+    /** AI 代码分析服务，用于调用大模型进行代码评审 */
     private final AiAnalysisService aiAnalysisService;
+    /** 评审任务 Mapper，操作 review_tasks 表 */
     private final ReviewTaskMapper taskMapper;
+    /** 评审意见 Mapper，操作 review_comments 表 */
     private final ReviewCommentMapper commentMapper;
+    /** 编程式事务模板，用于确保评论保存和状态更新原子性 */
     private final TransactionTemplate transactionTemplate;
 
     // ==================== 创建评审 ====================
@@ -80,7 +85,7 @@ public class ReviewServiceImpl implements ReviewService {
         try {
             // 步骤3：获取 GitHub PR Diff
             log.info("步骤1: 获取 PR Diff. repo={} pr={}", repoUrl, prNumber);
-            GitHubDiffResult diffResult = gitHubService.fetchPullRequestDiff(repoUrl, prNumber);
+            GitHubDiffResult diffResult = getPlatform(repoUrl).fetchDiff(repoUrl, prNumber);
             task.setPrTitle(diffResult.getPrTitle());
             task.setDiffSize(diffResult.getDiffText().length());
             task.setFileCount(diffResult.getFileCount());
@@ -162,7 +167,29 @@ public class ReviewServiceImpl implements ReviewService {
 
     // ==================== 私有方法 ====================
 
-    /** 创建任务记录，状态为 PROCESSING */
+    /**
+     * 根据 URL 匹配对应的代码平台（策略模式）
+     * 遍历所有 CodePlatformService 实现，找到 supports() 为 true 的平台
+     *
+     * @param repoUrl GitHub 仓库地址
+     * @return 匹配的代码平台服务实现
+     * @throws BusinessException 如果没有平台支持该 URL
+     */
+    private CodePlatformService getPlatform(String repoUrl) {
+        return platformServices.stream()
+                .filter(p -> p.supports(repoUrl))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(
+                        "不支持的代码托管平台，当前仅支持 GitHub: " + repoUrl));
+    }
+
+    /**
+     * 创建任务记录，状态为 PROCESSING
+     *
+     * @param repoUrl   标准化后的仓库地址
+     * @param prNumber  PR 编号
+     * @return 已持久化的评审任务实体（含自增 ID）
+     */
     private ReviewTask createTask(String repoUrl, Integer prNumber) {
         ReviewTask task = new ReviewTask();
         task.setRepoUrl(repoUrl);
@@ -174,7 +201,13 @@ public class ReviewServiceImpl implements ReviewService {
         return task;
     }
 
-    /** 批量保存评审意见 */
+    /**
+     * 批量保存评审意见
+     *
+     * @param taskId   关联的评审任务 ID
+     * @param analysis AI 分析结果（含评论列表）
+     * @return 已持久化的评论实体列表
+     */
     private List<ReviewComment> saveComments(Long taskId, AiAnalysisResult analysis) {
         if (analysis.getComments() == null || analysis.getComments().isEmpty()) {
             return Collections.emptyList();
@@ -189,6 +222,9 @@ public class ReviewServiceImpl implements ReviewService {
     /**
      * 标记任务失败
      * createReview 无事务包裹，task 已提交，此处 updateById 可直接生效
+     *
+     * @param task         当前评审任务实体
+     * @param errorMessage 失败原因描述
      */
     private void markFailed(ReviewTask task, String errorMessage) {
         task.setStatus(ReviewStatus.FAILED);
@@ -199,7 +235,14 @@ public class ReviewServiceImpl implements ReviewService {
         taskMapper.updateById(task);
     }
 
-    /** 将 AI 返回的评论转为数据库实体 */
+    /**
+     * 将 AI 返回的评论转为数据库实体
+     * 同时做字段长度截断，防止数据库写入异常
+     *
+     * @param taskId 关联的评审任务 ID
+     * @param item   AI 返回的单条评论数据
+     * @return ReviewComment 实体，准备持久化
+     */
     private ReviewComment buildComment(Long taskId, AiCommentItem item) {
         ReviewComment comment = new ReviewComment();
         comment.setTaskId(taskId);
@@ -212,7 +255,15 @@ public class ReviewServiceImpl implements ReviewService {
         return comment;
     }
 
-    /** 组装返回给前端的 DTO */
+    /**
+     * 组装返回给前端的 DTO
+     * 将 ReviewTask 实体和 ReviewComment 实体列表转换为 ReviewResultDTO
+     * 同时自动判断是否为 Mock 降级数据
+     *
+     * @param task     评审任务实体
+     * @param comments 评审意见实体列表
+     * @return 返回给前端的完整评审结果 DTO
+     */
     private ReviewResultDTO buildResultDTO(ReviewTask task, List<ReviewComment> comments) {
         ReviewResultDTO dto = new ReviewResultDTO();
         dto.setId(task.getId());
@@ -234,7 +285,12 @@ public class ReviewServiceImpl implements ReviewService {
         return dto;
     }
 
-    /** 实体转 DTO */
+    /**
+     * 实体转 DTO（ReviewComment -> CommentDTO）
+     *
+     * @param c 评审意见实体
+     * @return 前端展示用的评论 DTO
+     */
     private CommentDTO toCommentDTO(ReviewComment c) {
         CommentDTO dto = new CommentDTO();
         dto.setId(c.getId());
@@ -248,7 +304,12 @@ public class ReviewServiceImpl implements ReviewService {
         return dto;
     }
 
-    /** 将 AI 返回的风险等级字符串转为枚举 */
+    /**
+     * 将 AI 返回的风险等级字符串转为枚举
+     *
+     * @param level AI 返回的风险等级字符串（CRITICAL / WARNING / INFO）
+     * @return 对应的 RiskLevel 枚举，无法识别时默认返回 INFO
+     */
     private RiskLevel parseRiskLevel(String level) {
         if (level == null) return RiskLevel.INFO;
         if (ReviewConstants.AI_RISK_CRITICAL.equalsIgnoreCase(level)) return RiskLevel.CRITICAL;
@@ -256,13 +317,24 @@ public class ReviewServiceImpl implements ReviewService {
         return RiskLevel.INFO;
     }
 
-    /** 去除 URL 尾部斜杠 */
+    /**
+     * 去除 URL 尾部斜杠，确保仓库地址格式统一
+     *
+     * @param url 原始仓库地址
+     * @return 标准化后的 URL（无尾部斜杠）
+     */
     private String normalizeRepoUrl(String url) {
         if (url == null) return null;
         return url.trim().replaceAll("/$", "");
     }
 
-    /** 安全截断超长字符串，防止数据库写入异常 */
+    /**
+     * 安全截断超长字符串，防止数据库写入异常
+     *
+     * @param value     原始字符串
+     * @param maxLength 允许的最大长度
+     * @return 截断后的字符串（不超过 maxLength），null 入参返回 null
+     */
     private String truncate(String value, int maxLength) {
         if (value == null) return null;
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
