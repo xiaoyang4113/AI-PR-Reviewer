@@ -116,6 +116,11 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 调用 AI API，发送 System Prompt + diff 文本，返回原始 JSON 字符串
+     * 使用 OpenAI 兼容的聊天补全接口，通过 RestTemplate 发送 POST 请求
+     *
+     * @param diffText 待分析的 diff 文本（已截断）
+     * @return AI 返回的原始 JSON 字符串（message.content 内容）
+     * @throws RuntimeException API 调用失败、返回空数据或格式异常时抛出
      */
     private String callAiApi(String diffText) {
         String model = aiProperties.getModel();
@@ -163,6 +168,10 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 截断 diff 文本，确保不超过配置的最大长度
+     * 超出部分直接裁剪，并在末尾添加截断标记，提示用户 diff 不完整
+     *
+     * @param diffText 原始 diff 文本
+     * @return 截断后的 diff 文本，末尾含截断说明
      */
     private String truncateDiff(String diffText) {
         if (diffText == null || diffText.isEmpty()) {
@@ -179,7 +188,10 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 解析 AI 返回的 JSON，转成 AiAnalysisResult 对象
+     * 兼容 AI 可能返回 Markdown 代码块包裹的 JSON（```json ... ```）
      *
+     * @param jsonContent AI 返回的 JSON 字符串（可能含 Markdown 包装）
+     * @return 结构化的 AI 分析结果
      * @throws Exception JSON 格式异常时抛出，由调用方降级处理
      */
     private AiAnalysisResult parseAiResponse(String jsonContent) throws Exception {
@@ -210,6 +222,11 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 解析单条评论的 JSON 节点
+     * 提取 file_path、line_number、risk_level、match_code、suggestion、optimized_code 字段
+     * line_number 和 optimized_code 可能为 null，需特殊处理
+     *
+     * @param node 单条评论的 JSON 节点
+     * @return 解析后的 AiCommentItem 对象
      */
     private AiCommentItem parseCommentItem(JsonNode node) {
         AiCommentItem item = new AiCommentItem();
@@ -229,6 +246,11 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 安全获取 JSON 文本字段
+     * 字段不存在时返回空字符串，避免 NPE
+     *
+     * @param node  JSON 节点
+     * @param field 字段名
+     * @return 字段值，不存在时返回 ""
      */
     private String getJsonText(JsonNode node, String field) {
         return node.has(field) ? node.get(field).asText("") : "";
@@ -236,6 +258,12 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     /**
      * 带默认值的 JSON 文本字段获取
+     * 字段不存在时返回指定的 default value，避免 NPE
+     *
+     * @param node         JSON 节点
+     * @param field        字段名
+     * @param defaultValue 字段不存在时的默认值
+     * @return 字段值，不存在时返回 defaultValue
      */
     private String getJsonTextOrDefault(JsonNode node, String field, String defaultValue) {
         return node.has(field) ? node.get(field).asText(defaultValue) : defaultValue;
