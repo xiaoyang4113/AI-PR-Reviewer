@@ -7,7 +7,7 @@ AI 驱动的 GitHub Pull Request 代码评审工具，自动获取 PR 变更、�
 
 ---
 
-## 目录
+## 目录（CTRL+单击跳转）
 
 - [核心功能](#核心功能)
 - [技术栈](#技术栈)
@@ -21,7 +21,7 @@ AI 驱动的 GitHub Pull Request 代码评审工具，自动获取 PR 变更、�
   - [误报与漏报控制](#误报与漏报控制)
   - [未来扩展方向](#未来扩展方向)
 - [项目结构](#项目结构)
-- [Demo 视频](#demo-视频)
+- [Demo 视频和Github项目地址](#Demo 视频和Github项目地址)
 
 ---
 
@@ -147,7 +147,7 @@ exception/        业务异常 + 全局异常处理器
 | error_message | TEXT | 失败时的错误信息 |
 | created_at / updated_at | DATETIME | 时间戳 |
 
-**索引：** PRIMARY KEY(id), UNIQUE(repo_url(100), pr_number), INDEX(status), INDEX(created_at)
+**索引：** PRIMARY KEY(id), INDEX(repo_url(100), pr_number), INDEX(status), INDEX(created_at)
 
 ### review_comments（评审意见表）
 
@@ -330,12 +330,26 @@ public interface CodePlatformService {
 
 通过配置 `app.ai.model` 动态切换模型（DeepSeek / OpenAI / 通义千问 / 文心一言），无需改代码。
 
-**3. 异步 + 流式响应**
+**3. 异步 + WebSocket 实时推送**
 
-当前为同步阻塞模式。后续可改为：
-- 前端提交任务后立即返回 `taskId`
-- 后端 `@Async` 异步执行分析
-- 前端轮询或以 SSE/WebSocket 接收进度更新
+当前为同步阻塞模式，后续可改为异步架构：
+
+```
+前端提交 PR → 后端立即返回 taskId → @Async 后台分析
+                                          ↓
+                               WebSocket 实时推送进度
+                               ├── "正在获取 PR Diff..."
+                               ├── "正在 AI 分析 src/UserService.java (2/5)..."
+                               └── "分析完成" → 前端自动渲染结果
+```
+
+技术方案：
+- 后端 `@Async` + `ThreadPoolTaskExecutor` 异步执行评审任务
+- Spring WebSocket + STOMP 协议推送分析进度到前端
+- 前端 `SockJS` + `stomp.js` 订阅任务频道，实时更新进度条
+- 即使中途断网，任务继续在后端执行，重连后可查询结果
+
+优势：用户不用等待 30 秒，提交后即可关闭页面；大 PR 分析进度一目了然。
 
 **4. 按文件拆分分析**
 
@@ -404,9 +418,13 @@ ai-pr-reviewer/
 
 ---
 
-## Demo 视频
+## Demo 视频和Github项目地址
 
-> 视频链接：[待补充]
+> 哔哩哔哩视频链接：https://www.bilibili.com/video/BV1UbV56dEY9
+>
+> Github项目地址：[xiaoyang4113/AI-PR-Reviewer](https://github.com/xiaoyang4113/AI-PR-Reviewer)
+>
+> 注：Ctrl+鼠标左键单击跳转
 
 ---
 
