@@ -184,16 +184,16 @@ mysql -u root -p < backend/sql/schema.sql
 
 ### 2. 配置密钥
 
-编辑 `backend/src/main/resources/application-dev.yml`：
+编辑 `backend/src/main/resources/application.yml`，修改数据库密码和 AI API Key：
 
 ```yaml
 spring:
   datasource:
-    password: 你的数据库密码
+    password: 你的数据库密码             # 改这里
 
 app:
   ai:
-    api-key: 你的DeepSeek_API_Key
+    api-key: 你的DeepSeek_API_Key        # 改这里
 ```
 
 ### 3. 启动后端
