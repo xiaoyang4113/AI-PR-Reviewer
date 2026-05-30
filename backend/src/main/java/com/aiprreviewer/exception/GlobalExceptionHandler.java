@@ -4,6 +4,7 @@ import com.aiprreviewer.model.constant.ReviewConstants;
 import com.aiprreviewer.model.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -40,6 +41,17 @@ public class GlobalExceptionHandler {
         log.warn("参数校验失败: {}", message);
         return ResponseEntity.badRequest()
                 .body(ApiResponse.error(ReviewConstants.RESPONSE_CODE_BAD_REQUEST, message));
+    }
+
+    /**
+     * 处理数据库唯一约束冲突（重复提交同一 PR）
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateKeyException(DuplicateKeyException e) {
+        log.warn("数据库唯一约束冲突: {}", e.getMessage());
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.error(ReviewConstants.RESPONSE_CODE_BAD_REQUEST,
+                        "该 PR 已存在评审记录，可能是短时间内重复提交。如上次评审因网络中断等原因未完成，请等待 5 分钟后再试。"));
     }
 
     /**
